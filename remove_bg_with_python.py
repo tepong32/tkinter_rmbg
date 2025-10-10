@@ -10,8 +10,8 @@ from PIL import Image
 class RembgApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Rembg Utility - Background Remover")
-        self.root.geometry("520x520")
+        self.root.title("Rembg Studio - Batch Background Remover")
+        self.root.geometry("540x560")
         self.root.resizable(False, False)
 
         # --- UI State ---
@@ -27,10 +27,12 @@ class RembgApp:
 
         # --- UI Layout ---
         Label(root, text="Selected Images:", font=("Arial", 12, "bold")).pack(pady=(10, 5))
-        self.listbox = Listbox(root, width=60, height=10)
+        self.listbox = Listbox(root, width=65, height=10)
         self.listbox.pack(pady=(0, 10))
 
-        Button(root, text="Select Images", command=self.select_files, width=20, bg="#4CAF50", fg="white").pack(pady=5)
+        # File selection buttons
+        Button(root, text="Select Images", command=self.select_files, width=20, bg="#4CAF50", fg="white").pack(pady=3)
+        Button(root, text="Select Folder", command=self.select_folder, width=20, bg="#009688", fg="white").pack(pady=3)
 
         Label(root, text="Output Preset:", font=("Arial", 11)).pack(pady=(15, 5))
         OptionMenu(root, self.preset, *self.presets).pack()
@@ -47,14 +49,37 @@ class RembgApp:
         self.status_label = Label(root, text="", fg="gray")
         self.status_label.pack(pady=(5, 0))
 
-    # --- Select Files ---
+    # --- Select Individual Files ---
     def select_files(self):
         paths = filedialog.askopenfilenames(
             title="Select Image Files",
             filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.bmp;*.tiff;*.webp")]
         )
+        self._load_files(paths)
+
+    # --- Select Folder (Batch Mode) ---
+    def select_folder(self):
+        folder = filedialog.askdirectory(title="Select Folder Containing Images")
+        if not folder:
+            return
+
+        supported_exts = (".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".webp")
+        paths = [
+            os.path.join(folder, f)
+            for f in os.listdir(folder)
+            if f.lower().endswith(supported_exts)
+        ]
+
+        if not paths:
+            messagebox.showinfo("No Images", "No supported image files found in that folder.")
+            return
+
+        self._load_files(paths)
+
+    # --- Helper: Load Files into Listbox ---
+    def _load_files(self, paths):
         if paths:
-            self.files = paths
+            self.files = sorted(paths)
             self.listbox.delete(0, END)
             for f in self.files:
                 self.listbox.insert(END, os.path.basename(f))
@@ -63,7 +88,7 @@ class RembgApp:
     # --- Process Files ---
     def process_files(self):
         if not self.files:
-            messagebox.showwarning("No Files", "Please select at least one image file.")
+            messagebox.showwarning("No Files", "Please select at least one image or folder.")
             return
 
         preset = self.preset.get()
@@ -113,11 +138,16 @@ class RembgApp:
                     output.save(output_path)
 
                 self.progress["value"] = idx
-                self.status_label.config(text=f"Processed {idx}/{total_files}: {os.path.basename(input_path)}")
+                self.status_label.config(
+                    text=f"Processed {idx}/{total_files}: {os.path.basename(input_path)}"
+                )
                 self.root.update_idletasks()
 
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to process {os.path.basename(input_path)}\n\n{e}")
+                messagebox.showerror(
+                    "Error",
+                    f"Failed to process {os.path.basename(input_path)}\n\n{e}"
+                )
 
         self.status_label.config(text=f"✅ All done! {total_files} file(s) processed.", fg="green")
         messagebox.showinfo("Done", "Background removal completed!")
