@@ -1,3 +1,9 @@
+# Changelog
+
+## [1.0.1] - 2026-11-10
+### Maintenance
+- Update version_manager to v2.0.1 (preserve leading spaces in git output)
+
 🧾 Changelog
 v3.0 — Batch Folder Mode Release (2025-10-10)
 🆕 New
